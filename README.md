@@ -1,7 +1,14 @@
 # playlist-php
 
-Le but est de prendre un fichier streams.json et de générer une playlist avec de type m3u ou xspf.
+## Install
 
-L'utilisateur fourni en entrée l'url du site genre "https://www.morow.com" puis on append /streams.json puis on parse le fichier pour généré la playlist.
+```bash
+> composer install
+```
 
-Est-ce que vince tu penses que c'est utile que je fasse une lib php parse-streams-json que j'utilise pour générer la playlist ?
+## Usage
+
+```bash
+> php index.php https://morow.com/streams.json m3u
+> php index.php https://morow.com/streams.json xspf
+```
