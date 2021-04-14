@@ -63,7 +63,7 @@ abstract class AbstractExtractor implements ExtractorInterface
         );
 
         if (file_exists($filename)) {
-            Output::writeLn(sprintf('The destination file "%s" alread exists.', $filename));
+            Output::writeLn(sprintf('The destination file "%s" already exists.', $filename));
 
             return;
         }
