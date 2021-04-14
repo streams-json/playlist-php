@@ -24,8 +24,7 @@ class Xspf extends AbstractExtractor
 
         $annotation = $track->addChild('annotation', "Stream Title: ".$station->name.\PHP_EOL."Stream Description: ".$station->description.\PHP_EOL."Stream Genre: ".$station->genre);
         $info = $track->addChild('info', $station->url);
-        $content = $xml->asXML();
 
-        $this->writeFile($content, $station->name, $stream->bitrate, $stream->type);
+        $this->writeFile($xml->asXML(), $station->name, $stream->bitrate, $stream->type);
     }
 }
