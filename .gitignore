@@ -1,2 +1,5 @@
 /vendor/
+/files/m3u/*.m3u
+/files/xspf/*.xspf
 .php_cs.cache
+.vscode/*
