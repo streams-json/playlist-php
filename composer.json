@@ -6,11 +6,13 @@
     "authors": [
         {
             "name": "François LASSERRE",
-            "email": "e@mail.com"
-        }
+            "homepage": "https://www.francoislasserre.fr",
+            "role": "Developer"
+        },
         {
-            "name": "Vince TOMMASI",
-            "email": "e@mail.com"
+            "name": "Vincent TOMMASI",
+            "email": "tommasi.v@gmail.com",
+            "role": "Developer"
         }
     ],
     "autoload": {
