@@ -1,11 +1,15 @@
 {
-    "name": "choiz/playlist-php",
-    "description": "Playlist generator",
+    "name": "streams-json/playlist-php",
+    "description": "Streams-json playlist generator",
     "type": "project",
     "license": "MIT",
     "authors": [
         {
             "name": "François LASSERRE",
+            "email": "e@mail.com"
+        }
+        {
+            "name": "Vince TOMMASI",
             "email": "e@mail.com"
         }
     ],

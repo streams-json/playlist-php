@@ -2,4 +2,8 @@
 /files/m3u/*.m3u
 /files/xspf/*.xspf
 .php_cs.cache
+<<<<<<< HEAD
 .vscode/*
+=======
+.vscode/*
+>>>>>>> update_xml
