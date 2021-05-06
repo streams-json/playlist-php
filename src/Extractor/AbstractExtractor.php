@@ -10,7 +10,7 @@ abstract class AbstractExtractor implements ExtractorInterface
 {
     public const FILES_PATH = __DIR__.'/../../files';
 
-    private const REQUIRED_JSON_VERSION = 0.1;
+    private const REQUIRED_JSON_VERSION = "0.4.0";
 
     public function support(string $type): bool
     {
@@ -27,7 +27,7 @@ abstract class AbstractExtractor implements ExtractorInterface
             return;
         }
 
-        if ($json->{'_streams.json_Version'} < self::REQUIRED_JSON_VERSION) {
+        if ($json->{'_streams.json_version_'} < self::REQUIRED_JSON_VERSION) {
             echo sprintf(
                 'Version of streams.json is too low, please upgrade to version "%s" or higher.',
                 self::REQUIRED_JSON_VERSION
