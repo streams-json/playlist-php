@@ -1,6 +1,8 @@
 {
     "name": "streams-json/playlist-php",
     "description": "Streams-json playlist generator",
+    "homepage": "https://streams-json.rocketip.net/",
+    "version": "0.1.0",
     "type": "project",
     "license": "MIT",
     "authors": [
