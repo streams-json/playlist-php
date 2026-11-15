@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>streams.json playlist generator</title>
+<meta name="description" content="Turn a streams.json file into m3u or xspf playlists, packed in a zip file.">
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #f6f5f1;
+    --card: #ffffff;
+    --text: #1d1c1a;
+    --muted: #6a675f;
+    --line: #dcd9d0;
+    --accent: #c2410c;
+    --accent-text: #ffffff;
+    --ok: #166534;
+    --error: #b42318;
+    --field: #ffffff;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #151412;
+      --card: #1f1e1b;
+      --text: #f0eee8;
+      --muted: #a3a097;
+      --line: #36342f;
+      --accent: #fb923c;
+      --accent-text: #1d1c1a;
+      --ok: #86efac;
+      --error: #fca5a5;
+      --field: #151412;
+    }
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    padding: 2.5rem 1rem 4rem;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+
+  main { max-width: 40rem; margin: 0 auto; }
+
+  h1 { margin: 0 0 .25rem; font-size: 1.6rem; letter-spacing: -.01em; }
+  h1 code { font-size: .95em; color: var(--accent); }
+
+  .lead { margin: 0 0 1.75rem; color: var(--muted); }
+
+  form, #result {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 1.25rem;
+  }
+
+  fieldset { border: 0; margin: 0 0 1.25rem; padding: 0; min-width: 0; }
+
+  legend { padding: 0; margin-bottom: .5rem; font-weight: 600; }
+
+  .choices { display: flex; flex-wrap: wrap; gap: .5rem; }
+
+  .choices label {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    padding: .35rem .75rem;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    cursor: pointer;
+  }
+
+  .choices label:has(input:checked) { border-color: var(--accent); }
+  .choices input { accent-color: var(--accent); margin: 0; }
+
+  .source { margin-top: .75rem; }
+  .source[hidden] { display: none; }
+
+  input[type="url"], input[type="file"], textarea {
+    width: 100%;
+    padding: .6rem .7rem;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--field);
+    color: inherit;
+    font: inherit;
+  }
+
+  textarea { min-height: 9rem; resize: vertical; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .85rem; }
+
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .hint { margin: .4rem 0 0; font-size: .875rem; color: var(--muted); }
+
+  button {
+    padding: .65rem 1.1rem;
+    border: 0;
+    border-radius: 8px;
+    background: var(--accent);
+    color: var(--accent-text);
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  button:disabled { opacity: .6; cursor: progress; }
+
+  #result { margin-top: 1rem; }
+  #result[hidden] { display: none; }
+  #result h2 { margin: 0 0 .5rem; font-size: 1.05rem; }
+  #result.ok h2 { color: var(--ok); }
+  #result.error h2 { color: var(--error); }
+  #result p { margin: 0 0 .5rem; }
+  #result ul { margin: .5rem 0 0; padding-left: 1.2rem; font-size: .9rem; overflow-wrap: anywhere; }
+  #result ul.notes { color: var(--muted); }
+  #result a { color: var(--accent); font-weight: 600; }
+
+  footer { margin-top: 1.5rem; font-size: .875rem; color: var(--muted); }
+  footer a { color: inherit; }
+</style>
+</head>
+<body>
+<main>
+  <h1><code>streams.json</code> playlist generator</h1>
+  <p class="lead">Turn a streams.json file into one playlist per stream, packed in a zip file. Everything runs in your browser: nothing is uploaded.</p>
+
+  <form id="form" novalidate>
+    <fieldset>
+      <legend>Source</legend>
+      <div class="choices">
+        <label><input type="radio" name="source" value="url" checked> URL</label>
+        <label><input type="radio" name="source" value="file"> File</label>
+        <label><input type="radio" name="source" value="text"> Paste</label>
+      </div>
+
+      <div class="source" data-source="url">
+        <input type="url" id="url" aria-label="URL of the streams.json file" placeholder="https://domain.tld/streams.json" autocomplete="url" spellcheck="false">
+        <p class="hint">The website must allow other sites to read the file (CORS). If it does not, download the file and use File or Paste.</p>
+      </div>
+
+      <div class="source" data-source="file" hidden>
+        <input type="file" id="file" aria-label="streams.json file" accept=".json,application/json">
+      </div>
+
+      <div class="source" data-source="text" hidden>
+        <textarea id="text" aria-label="Content of the streams.json file" spellcheck="false" placeholder='{ "version": "0.5.0", "name": "…", "stations": [ … ] }'></textarea>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Export format</legend>
+      <div class="choices">
+        <label><input type="checkbox" name="format" value="m3u" checked> m3u</label>
+        <label><input type="checkbox" name="format" value="xspf"> xspf</label>
+      </div>
+    </fieldset>
+
+    <button type="submit" id="submit">Generate zip file</button>
+  </form>
+
+  <section id="result" hidden aria-live="polite"></section>
+
+  <footer>
+    Part of <a href="https://github.com/streams-json/playlist-php">playlist-php</a>.
+    Learn about the format on <a href="https://github.com/streams-json/streams.json">streams.json</a>.
+  </footer>
+</main>
+
+<script src="playlist.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  const form = document.getElementById('form');
+  const submit = document.getElementById('submit');
+  const result = document.getElementById('result');
+  let downloadUrl = null;
+
+  const selectedSource = () => form.elements.source.value;
+
+  form.addEventListener('change', (event) => {
+    if (event.target.name !== 'source') {
+      return;
+    }
+
+    for (const panel of form.querySelectorAll('.source')) {
+      panel.hidden = panel.dataset.source !== selectedSource();
+    }
+  });
+
+  function element(tag, text) {
+    const node = document.createElement(tag);
+    node.textContent = text;
+
+    return node;
+  }
+
+  function list(items, className) {
+    const ul = document.createElement('ul');
+    ul.className = className || '';
+    items.forEach((item) => ul.append(element('li', item)));
+
+    return ul;
+  }
+
+  function show(kind, title, nodes) {
+    result.className = kind;
+    result.replaceChildren(element('h2', title), ...nodes);
+    result.hidden = false;
+  }
+
+  async function readSource() {
+    const source = selectedSource();
+
+    if (source === 'file') {
+      const file = document.getElementById('file').files[0];
+
+      if (!file) {
+        throw new Error('Choose a streams.json file.');
+      }
+
+      return { text: await file.text(), name: file.name };
+    }
+
+    if (source === 'text') {
+      const text = document.getElementById('text').value.trim();
+
+      if (text === '') {
+        throw new Error('Paste the content of a streams.json file.');
+      }
+
+      return { text, name: 'streams' };
+    }
+
+    let url;
+
+    try {
+      url = new URL(document.getElementById('url').value.trim());
+    } catch (error) {
+      throw new Error('Enter the full URL of a streams.json file, starting with https://.');
+    }
+
+    if (!['http:', 'https:'].includes(url.protocol)) {
+      throw new Error('Only http and https URLs are supported.');
+    }
+
+    if (url.protocol === 'http:' && location.protocol === 'https:') {
+      throw new Error('This page cannot read a file served over http. Download it and use File or Paste.');
+    }
+
+    let response;
+
+    try {
+      response = await fetch(url, { credentials: 'omit' });
+    } catch (error) {
+      throw new Error('Could not read ' + url.host + '. The site is unreachable or does not allow other sites to read the file (CORS). Download the file and use File or Paste.');
+    }
+
+    if (!response.ok) {
+      throw new Error(url.host + ' answered with an error (' + response.status + ').');
+    }
+
+    return { text: await response.text(), name: url.hostname };
+  }
+
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    submit.disabled = true;
+
+    try {
+      const source = await readSource();
+      let json;
+
+      try {
+        json = JSON.parse(source.text);
+      } catch (error) {
+        throw new Error('This is not valid JSON: ' + error.message);
+      }
+
+      const formats = [...form.querySelectorAll('input[name="format"]:checked')].map((input) => input.value);
+      const playlists = StreamsPlaylist.generate(json, formats);
+
+      if (playlists.files.length === 0) {
+        show('error', 'No playlist to export', [
+          element('p', 'No stream with a type and a url was found in ' + playlists.stations + ' station(s).'),
+          list(playlists.messages, 'notes'),
+        ]);
+
+        return;
+      }
+
+      if (downloadUrl !== null) {
+        URL.revokeObjectURL(downloadUrl);
+      }
+
+      const archive = StreamsPlaylist.zip(playlists.files);
+      downloadUrl = URL.createObjectURL(new Blob([archive], { type: 'application/zip' }));
+
+      const link = element('a', 'Download again');
+      link.href = downloadUrl;
+      link.download = source.name.replace(/\.json$/i, '').replace(/[^\w.-]+/g, '-') + '-playlists.zip';
+
+      const summary = element('p', playlists.files.length + ' playlist(s) from ' + playlists.stations + ' station(s), streams.json ' + playlists.version + '. ');
+      summary.append(link);
+
+      const nodes = [summary, list(playlists.files.map((file) => file.path))];
+
+      if (playlists.messages.length > 0) {
+        nodes.push(list(playlists.messages, 'notes'));
+      }
+
+      show('ok', 'Zip file ready', nodes);
+      link.click();
+    } catch (error) {
+      show('error', 'Could not generate the playlists', [element('p', error.message)]);
+    } finally {
+      submit.disabled = false;
+    }
+  });
+})();
+</script>
+</body>
+</html>
