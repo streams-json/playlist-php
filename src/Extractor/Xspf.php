@@ -8,23 +8,42 @@ class Xspf extends AbstractExtractor
 {
     public const TYPE = 'xspf';
 
-    protected function extractStream(\stdClass $station, \stdClass $stream): void
+    protected function extractStream(\stdClass $station, \stdClass $stream, array $urls): void
     {
         $xml = new \SimpleXMLElement('<?xml version="1.0" encoding="UTF-8"?><playlist xmlns="http://xspf.org/ns/0/" version="1"></playlist>');
-        $xml->addChild('title', $station->name);
+        $xml->addChild('title', $this->escape($station->name));
         $xml->addChild('creator');
         $tracklist = $xml->addChild('trackList');
         $track = $tracklist->addChild('track');
 
-        $urls = is_array($stream->url) ? $stream->url : [$stream->url];
-
         foreach ($urls as $url) {
-            $track->addChild('location', $url);
+            $track->addChild('location', $this->escape($url));
         }
 
-        $track->addChild('annotation', 'Stream Title: '.$station->name.\PHP_EOL.'Stream Description: '.$station->description.\PHP_EOL.'Stream Genre: '.$station->genre);
-        $track->addChild('info', $station->url);
+        $annotation = ['Stream Title: '.$station->name];
 
-        $this->writeFile($xml->asXML(), $station->name, $stream->bitrate, $stream->type);
+        if (isset($station->description)) {
+            $annotation[] = 'Stream Description: '.$station->description;
+        }
+
+        if (isset($station->genre)) {
+            $annotation[] = 'Stream Genre: '.$station->genre;
+        }
+
+        $track->addChild('annotation', $this->escape(implode(\PHP_EOL, $annotation)));
+
+        if (isset($station->url)) {
+            $track->addChild('info', $this->escape($station->url));
+        }
+
+        $this->writeFile($xml->asXML(), $station, $stream);
+    }
+
+    /**
+     * SimpleXMLElement::addChild() does not escape "&", common in stream urls.
+     */
+    private function escape(string $value): string
+    {
+        return htmlspecialchars($value, \ENT_XML1 | \ENT_QUOTES, 'UTF-8');
     }
 }
